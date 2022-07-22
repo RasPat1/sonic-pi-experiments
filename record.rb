@@ -165,7 +165,6 @@ end
 
 # don't edit anything above this line
 
-
 settings do
   quantise_amount 0.5
   file_path 'C:\Users\Carlos\Desktop\recording.txt'
