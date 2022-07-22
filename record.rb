@@ -15,7 +15,12 @@ class State
   def file_path
     settings.file_path
   end
+  
+  def bpm
+    settings.bpm
+  end
 end
+
 
 state = State.new
 
@@ -93,12 +98,12 @@ define :playback do |file_path|
   end
 end
 
-define :record do |file_path, bpm: 120|
+define :record do |file_path|
   state.recording = true
   
   raise "Can't record and playback at the same time" if state.playback
   
-  use_bpm bpm
+  use_bpm state.bpm
   
   live_loop :metronome do
     sample :drum_cymbal_closed
@@ -153,6 +158,10 @@ define :settings do |&block|
     def file_path(path = nil)
       @file_path ||= path
     end
+    
+    def bpm(bpm = 120)
+      @bpm ||= bpm
+    end
   end
   
   
@@ -165,6 +174,5 @@ end
 # don't edit anything above this line
 
 settings do
-  quantise_amount 0.5
   file_path 'C:\Users\Carlos\Desktop\return\intro.txt'
 end
