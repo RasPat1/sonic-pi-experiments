@@ -1,15 +1,23 @@
-FILE_PATH = 'C:\Users\Carlos\Desktop\recording.txt'
 class State
-  attr_accessor :recording, :playback
+  attr_accessor :recording, :playback, :settings
+  attr_reader :notes
   
   def initialize
     @recording = false
     @playback = false
+    @notes = []
+  end
+  
+  def quantise_amount
+    settings.quantise_amount
+  end
+  
+  def file_path
+    settings.file_path
   end
 end
 
 state = State.new
-notes = []
 
 class Note
   class << self
@@ -58,7 +66,8 @@ def return_beep(pitch:, velocity:)
   end
 end
 
-define :playback do |file_path, should_quantise: false|
+define :playback do |file_path|
+  return if state.playback
   state.playback = true
   
   raise "Can't record and playback at the same time" if state.recording
@@ -73,8 +82,8 @@ define :playback do |file_path, should_quantise: false|
   end
   
   times = notes_to_play.map do |the_note|
-    first_time = should_quantise ? quantise(notes_to_play.first.time, 0.5) : notes_to_play.first.time
-    the_note_time = should_quantise ? quantise(the_note.time, 0.5) : the_note.time
+    first_time = state.quantise_amount ? quantise(notes_to_play.first.time, state.quantise_amount) : notes_to_play.first.time
+    the_note_time = state.quantise_amount ? quantise(the_note.time, state.quantise_amount) : the_note.time
     the_note_time - first_time
   end
   
@@ -108,8 +117,8 @@ define :record do |file_path, bpm: 120|
     
     return_beep pitch: note, velocity: velocity
     
-    notes << Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: current_bpm)
-    set :notes, notes.map(&:to_json)
+    state.notes << Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: current_bpm)
+    set :notes, state.notes.map(&:to_json)
     
     require 'json'
     
@@ -117,11 +126,47 @@ define :record do |file_path, bpm: 120|
   end
 end
 
-##########
+live_loop :key_listener do
+  note_tuple = sync "/midi:midiin2_(keystation_49_mk3)_1:1/note_on"
+  
+  note, velocity = note_tuple
+  
+  puts note
+  
+  case note
+  when 95
+    record(state.file_path)
+  when 93
+    stop
+  when 94
+    playback(state.file_path)
+  end
+end
 
-# Control below this line
-# API:
-# RECORDING:
-# record(FILE_PATH)
-# PLAYBACK:
-# playback(FILE_PATH, should_quantise: true)
+define :settings do |&block|
+  class Settings
+    attr_accessor :quantise_amount, :file_path
+    
+    def quantise_amount(amount = nil)
+      @quantise_amount ||= amount
+    end
+    
+    def file_path(path = nil)
+      @file_path ||= path
+    end
+  end
+  
+  
+  settings = Settings.new
+  settings.instance_exec(&block)
+  
+  state.settings = settings
+end
+
+# don't edit anything above this line
+
+
+settings do
+  quantise_amount 0.5
+  file_path 'C:\Users\Carlos\Desktop\recording.txt'
+end
