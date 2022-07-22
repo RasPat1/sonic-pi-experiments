@@ -145,7 +145,7 @@ live_loop :key_listener do
   end
 end
 
-define :settings do |&block|
+define :recording_settings do |&block|
   class Settings
     attr_accessor :quantise_amount, :file_path
     
@@ -175,7 +175,9 @@ end
 
 # don't edit anything above this line
 
-settings do
+recording_settings do
   file_path 'C:\Users\Carlos\Desktop\return\intro.txt'
   synth_name :beep
+  quantise_amount 0.5
+  bpm 120
 end
