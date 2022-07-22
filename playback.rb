@@ -14,7 +14,7 @@ define :playback do |file_path|
   end
   
   times = notes_to_play.map do |the_note|
-    return if state.stop_playback
+    return if state.is_stopped
 
     first_time = state.quantise_amount ? quantise(notes_to_play.first.time, state.quantise_amount) : notes_to_play.first.time
     the_note_time = state.quantise_amount ? quantise(the_note.time, state.quantise_amount) : the_note.time
