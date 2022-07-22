@@ -109,7 +109,6 @@ define :record do |file_path, bpm: 120|
   
   live_loop :record do
     use_real_time
-    sync :metronome
     
     note_tuple = sync "/midi:keystation_49_mk3_0:1/note_on"
     
@@ -122,7 +121,7 @@ define :record do |file_path, bpm: 120|
     
     require 'json'
     
-    File.open(FILE_PATH, 'w') { |file| file.write get(:notes) }
+    File.open(state.file_path, 'w') { |file| file.write get(:notes) }
   end
 end
 
@@ -167,5 +166,5 @@ end
 
 settings do
   quantise_amount 0.5
-  file_path 'C:\Users\Carlos\Desktop\recording.txt'
+  file_path 'C:\Users\Carlos\Desktop\return\intro.txt'
 end
