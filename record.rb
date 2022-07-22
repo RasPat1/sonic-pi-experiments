@@ -19,6 +19,10 @@ class State
   def bpm
     settings.bpm
   end
+  
+  def synth_name
+    settings.synth_name
+  end
 end
 
 
@@ -35,12 +39,13 @@ class Note
   
   attr_reader :pitch, :velocity, :time, :current_bpm
   
-  def initialize(pitch:, velocity:, time:, context: nil, current_bpm:)
+  def initialize(pitch:, velocity:, time:, context: nil, current_bpm:, state: nil)
     @pitch = pitch
     @velocity = velocity
     @time = time
     @context = context
     @current_bpm = current_bpm
+    @state = state
   end
   
   def to_json
@@ -56,18 +61,9 @@ class Note
     puts to_json
   end
   
-  def play
-    @context.send(:return_beep, pitch: pitch, velocity: velocity)
-  end
-end
-
-def midi_note(synth_name:, velocity:, pitch:, **kwargs)
-  synth synth_name, velocity: velocity / 127.0, note: pitch, **kwargs
-end
-
-def return_beep(pitch:, velocity:)
-  with_fx :reverb, mix: 0.5   do
-    midi_note synth_name: :beep, sustain: 0.1, pitch: pitch, velocity: velocity
+  
+  def play(synth_name = nil, **kwargs)
+    @context.send(:synth, synth_name || @state.synth_name, velocity: velocity / 127.0, note: pitch, **kwargs)
   end
 end
 
@@ -119,9 +115,11 @@ define :record do |file_path|
     
     note, velocity = note_tuple
     
-    return_beep pitch: note, velocity: velocity
+    the_note = Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: current_bpm, context: self, state: state)
     
-    state.notes << Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: current_bpm)
+    the_note.play
+    
+    state.notes << the_note
     set :notes, state.notes.map(&:to_json)
     
     require 'json'
@@ -162,6 +160,10 @@ define :settings do |&block|
     def bpm(bpm = 120)
       @bpm ||= bpm
     end
+    
+    def synth_name(the_synth = :beep)
+      @synth_name ||= the_synth
+    end
   end
   
   
@@ -175,4 +177,5 @@ end
 
 settings do
   file_path 'C:\Users\Carlos\Desktop\return\intro.txt'
+  synth_name :beep
 end
