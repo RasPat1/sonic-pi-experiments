@@ -80,7 +80,7 @@ define :playback do |file_path|
   end
 end
 
-define :record do
+define :record do |file_path|
   state.recording = true
   
   raise "Can't record and playback at the same time" if state.playback
@@ -107,6 +107,6 @@ end
 # Control below this line
 # API:
 ## RECORDING
-##| record
+##| record(FILE_PATH)
 ## PLAYBACK:
 ##| playback(FILE_PATH)
