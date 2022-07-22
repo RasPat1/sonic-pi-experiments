@@ -25,7 +25,6 @@ class State
   end
 end
 
-
 state = State.new
 
 class Note
