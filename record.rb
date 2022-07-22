@@ -1,11 +1,12 @@
 class State
   attr_accessor :recording, :playback, :settings
-  attr_reader :notes
+  attr_reader :notes, :context
   
-  def initialize
+  def initialize(context)
     @recording = false
     @playback = false
     @notes = []
+    @context = context
   end
   
   def quantise_amount
@@ -25,24 +26,23 @@ class State
   end
 end
 
-state = State.new
+state = State.new(self)
 
 class Note
   class << self
-    def from_json(json, context)
+    def from_json(json, state:)
       hash = JSON.parse(json, symbolize_names: true)
       
-      Note.new(**hash, context: context)
+      Note.new(**hash, state: state)
     end
   end
   
   attr_reader :pitch, :velocity, :time, :current_bpm
   
-  def initialize(pitch:, velocity:, time:, context: nil, current_bpm:, state: nil)
+  def initialize(pitch:, velocity:, time:, current_bpm:, state:)
     @pitch = pitch
     @velocity = velocity
     @time = time
-    @context = context
     @current_bpm = current_bpm
     @state = state
   end
@@ -62,7 +62,7 @@ class Note
   
   
   def play(synth_name = nil, **kwargs)
-    @context.send(:synth, synth_name || @state.synth_name, velocity: velocity / 127.0, note: pitch, **kwargs)
+    @state.context.send(:synth, synth_name || @state.synth_name, velocity: velocity / 127.0, note: pitch, **kwargs)
   end
 end
 
@@ -78,7 +78,7 @@ define :playback do |file_path|
   end
   
   notes_to_play = lines.map do |the_note|
-    Note.from_json(the_note, self)
+    Note.from_json(the_note, state: state)
   end
   
   times = notes_to_play.map do |the_note|
@@ -87,8 +87,11 @@ define :playback do |file_path|
     the_note_time - first_time
   end
   
+  use_bpm state.bpm
+  
   at times, notes_to_play do |time, the_note|
-    puts "playing #{the_note.to_json}"
+    puts "playing #{the_note.to_json} at current_bpm: #{current_bpm}"
+    
     the_note.play
   end
 end
@@ -106,7 +109,6 @@ define :record do |file_path|
     sleep 1
   end
   
-  
   live_loop :record do
     use_real_time
     
@@ -114,7 +116,7 @@ define :record do |file_path|
     
     note, velocity = note_tuple
     
-    the_note = Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: current_bpm, context: self, state: state)
+    the_note = Note.new(pitch: note, velocity: velocity, time: vt, current_bpm: state.bpm, state: state)
     
     the_note.play
     
@@ -130,9 +132,7 @@ end
 live_loop :key_listener do
   note_tuple = sync "/midi:midiin2_(keystation_49_mk3)_1:1/note_on"
   
-  note, velocity = note_tuple
-  
-  puts note
+  note = note_tuple[0]
   
   case note
   when 95
@@ -177,6 +177,6 @@ end
 recording_settings do
   file_path 'C:\Users\Carlos\Desktop\return\intro.txt'
   synth_name :beep
-  quantise_amount 0.5
-  bpm 120
+  quantise_amount 0.25
+  bpm 60
 end
