@@ -5,9 +5,7 @@ define :playback do |file_path|
   raise "Can't record and playback at the same time" if state.recording
   lines = []
   
-  File.open(file_path).each do |the_line|
-    lines = [*lines, *JSON.parse(the_line)]
-  end
+  lines = JSON.parse(File.read(file_path))
   
   notes_to_play = lines.map do |the_note|
     Note.from_json(the_note, state: state)
