@@ -1,0 +1,1 @@
+curl -X POST https://306a-2600-4040-f059-2000-d5fc-532e-2ff5-a70c.ngrok.io -d '{"pitch":73,"velocity":52,"time":7,"current_bpm":60}'
